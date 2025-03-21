@@ -1,5 +1,3 @@
-# weaveGitHubSearchService
-
 ### Github Search Service
 Build a service using gRPC that builds on top of the GitHub API to perform queries for the
 provided search phrase and allows for optional filtering down to the user level. You’ll return the
@@ -35,12 +33,16 @@ Instructions
 
 ## Prerequisites
 
-Ensure you have the following installed on your system:
-    Go (1.23.3) - Download & Install (https://go.dev/dl/)
-    Protocol Buffers Compiler (protoc) - `brew install protobuf`
-    Buf (for Protobuf management) - Install using Homebrew: `brew install bufbuild/buf/buf`
-    Git - Install using Homebrew: `brew install git`
-    Make - Install using Homebrew: `brew install make`
+1. Ensure you have the following installed on your system:
+Go (1.23.3) - Download & Install (https://go.dev/dl/)
+
+2. Protocol Buffers Compiler (protoc) - `brew install protobuf`
+
+3. Buf (for Protobuf management) - Install using Homebrew: `brew install bufbuild/buf/buf`
+
+4. Git - Install using Homebrew: `brew install git`
+
+5. Make - Install using Homebrew: `brew install make`
 
 ## Setup Instructions:
 1. Clone the repository: `git clone git@github.com:Thesohan/weaveGitHubSearchService.git`
