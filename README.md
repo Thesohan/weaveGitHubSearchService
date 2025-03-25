@@ -59,3 +59,9 @@ Go (1.23.3) - Download & Install (https://go.dev/dl/)
 1. Missing Dependencies: Run go mod tidy to install missing Go dependencies.
 2. Protobuf Compilation Issues: Ensure protoc and buf are correctly installed.
 3. Authentication Errors: Ensure you have set GITHUB_API_TOKEN with a valid GitHub token in your env variable.
+
+
+### Future Improvements
+1. Support for conigurable logging
+2. Support for pagination
+3. Secret management for API tokens

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/Thesohan/weaveGitHubSearchService/server/constants"
+	"github.com/cenkalti/backoff/v4"
 )
 
 // HTTPClient defines an interface for making HTTP requests.
@@ -24,7 +26,20 @@ func (g *GetRequest) DoRequest(ctx context.Context, client *http.Client, url str
 		return err
 	}
 	setHeaders(req, headers)
-	return executeRequest(client, req, response)
+
+	bo := backoff.NewExponentialBackOff()
+	bo.MaxElapsedTime = constants.MAXIUM_RETRY_DELAY // Set max retry duration
+
+	operation := func() error {
+		fmt.Printf("github api call at time: %v\n", time.Now().Format(time.DateTime))
+		err := executeRequest(client, req, response)
+		if err != nil {
+			fmt.Printf("error while calling search api: %v\n", err)
+		}
+		return err
+	}
+
+	return backoff.Retry(operation, bo)
 }
 
 // Helper function to set headers for a request.
