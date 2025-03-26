@@ -62,6 +62,6 @@ Go (1.23.3) - Download & Install (https://go.dev/dl/)
 
 
 ### Future Improvements
-1. Support for conigurable logging
+1. Support for configurable logging
 2. Support for pagination
 3. Secret management for API tokens
