@@ -1,13 +1,21 @@
-.PHONY: generate server client deps # Ensures genereate, server ,client, deps are commands, otherwise make will assue server as a file
+BUF_IMAGE=buf-builder
+BUF_DOCKERFILE=Dockerfile.buf
+WORKDIR=/app
 
-generate:
-	buf generate
+APP_IMAGE=server
+APP_DOCKERFILE=Dockerfile.server
 
-server:
-	go run server/server.go
+generate: build-buf
+	docker run --rm -v "$(PWD):$(WORKDIR)" $(BUF_IMAGE) buf generate
 
-client:
-	go run client/client.go
+build-buf:
+	docker build -t $(BUF_IMAGE) -f $(BUF_DOCKERFILE) .
+
+build-app:
+	docker build -t $(APP_IMAGE) -f $(APP_DOCKERFILE) .
+
+run: build-app
+	docker run --rm -it -p 8080:8080 --env-file .env $(APP_IMAGE)
 
 deps:
 	go mod tidy

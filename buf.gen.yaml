@@ -1,8 +1,19 @@
+# Specify the version of the configuration file
 version: v1
+
+# Enable or disable managed mode
+managed:
+  enabled: true
+
+# List of plugins to use for code generation
 plugins:
+  # Go plugin for generating Go code
   - name: go
-    out: gen/go
-    opt: paths=source_relative
+    out: gen/go # Output directory for generated Go code
+    opt: paths=source_relative # The generated .pb.go files are placed relative to the .proto file’s directory instead of following the full import path
+
+  # Go gRPC plugin for generating gRPC code in Go
   - name: go-grpc
     out: gen/go
-    opt: paths=source_relative
+    opt: paths=source_relative 
+

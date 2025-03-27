@@ -9,7 +9,7 @@ service GithubSearchService {
 }
 
 message SearchRequest {
-  string search_term = 1;
+  string term = 1;
   optional string user = 2;
 }
 

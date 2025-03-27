@@ -4,86 +4,94 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"sync"
+	"time"
 
-	"github.com/Thesohan/weaveGitHubSearchService/server/constants"
 	httpClient "github.com/Thesohan/weaveGitHubSearchService/server/http_client"
-	"github.com/Thesohan/weaveGitHubSearchService/server/structures"
 )
 
-// GitHubAPIURL is the base URL for GitHub search API.
-const GitHubAPIURL = "https://api.github.com/search/code"
+const (
+	defaultGitHubAPIURL = "https://api.github.com/search/code"
+	githubTokenEnvName  = "GITHUB_TOKEN"
+	httpClientTimeout   = 3 * time.Second
+)
 
 var (
 	once      sync.Once
 	singleton IGithubClient
 )
 
+type searchResponse struct {
+	Items []struct {
+		HTMLURL    string `json:"html_url"`
+		Repository struct {
+			FullName string `json:"full_name"`
+		} `json:"repository"`
+	} `json:"items"`
+}
+
 type githubClient struct {
-	client  *http.Client
-	baseURL string
-	headers map[string]string
+	client            *http.Client
+	baseURL           string
+	headers           map[string]string
+	maximumRetryDelay *time.Duration
 }
 
 // IGithubClient interface for API requests.
 type IGithubClient interface {
-	SearchCode(ctx context.Context, query string) (*structures.Data, error)
+	SearchCode(ctx context.Context, query string) (*searchResponse, error)
 }
 
-/*
-	NewGitHubClient returns a singleton instance of GitHubClient.
+type GitHubClientOption func(*githubClient)
 
-baseURL is accepted here to make testing easy, we can pass a mock URL while creating tests
-*/
-func NewGitHubClient(baseURL ...string) IGithubClient {
-	once.Do(func() {
-		fmt.Println("Creating new github client")
-		url := GitHubAPIURL
-		if len(baseURL) > 0 && baseURL[0] != "" {
-			url = baseURL[0]
-		}
-		singleton = &githubClient{
-			client:  &http.Client{},
-			baseURL: url,
-			headers: map[string]string{
-				"Authorization": "token " + os.Getenv(constants.GITHUB_TOKEN),
-				"Content-Type":  "application/json",
-			},
-		}
-	})
-	return singleton
+func WithBaseURL(baseURL string) GitHubClientOption {
+	return func(c *githubClient) { c.baseURL = baseURL }
+}
+
+func WithToken(token string) GitHubClientOption {
+	return func(c *githubClient) { c.headers["Authorization"] = "token " + token }
+}
+
+func WithMaximumRetryDelay(maximumRetryDelay *time.Duration) GitHubClientOption {
+	return func(c *githubClient) { c.maximumRetryDelay = maximumRetryDelay }
+}
+
+func NewGitHubClient(opts ...GitHubClientOption) IGithubClient {
+	client := &githubClient{
+		client:  &http.Client{Timeout: httpClientTimeout},
+		baseURL: defaultGitHubAPIURL,
+		headers: map[string]string{
+			"Content-Type": "application/json",
+		},
+	}
+
+	for _, opt := range opts {
+		opt(client)
+	}
+	if _, ok := client.headers["Authorization"]; !ok {
+		client.headers["Authorization"] = "token " + os.Getenv(githubTokenEnvName)
+	}
+	return client
 }
 
 // SearchCode fetches search results using a generic request function.
-func (c *githubClient) SearchCode(ctx context.Context, query string) (*structures.Data, error) {
-	reqURL := fmt.Sprintf("%s?q=%s", c.baseURL, query)
-	fmt.Printf("final url %v\n", reqURL)
-	dynamicHeaders := map[string]string{
-		// Add any dynamic headers here
-	}
-
-	// Merge static and dynamic headers
-	headers := c.updateHeaders(dynamicHeaders)
-
-	data := structures.Data{}
-
-	// Use factory to get a GET request handler.
-	requestHandler, err := httpClient.NewHTTPRequest(constants.HTTP_METHOD_GET)
+func (c *githubClient) SearchCode(ctx context.Context, query string) (*searchResponse, error) {
+	base, err := url.Parse(c.baseURL)
 	if err != nil {
-		return nil, fmt.Errorf("error from NewHTTPRequest: %v", err)
+		return nil, err
 	}
+	param := url.Values{}
+	param.Add("q", query)
+	base.RawQuery = param.Encode()
 
-	err = requestHandler.DoRequest(ctx, c.client, reqURL, headers, nil, &data)
+	reqURL := base.String()
+	// Use factory to get a GET request handler.
+	data := searchResponse{}
+	err = httpClient.DoRequest(ctx, c.client, http.MethodGet, reqURL, c.headers, nil /* body */, &data, c.maximumRetryDelay)
 	if err != nil {
 		return nil, fmt.Errorf("error from DoRequest, %v", err)
 	}
 	return &data, nil
-}
-
-func (c *githubClient) updateHeaders(dynamicHeaders map[string]string) map[string]string {
-	for k, v := range c.headers {
-		dynamicHeaders[k] = v
-	}
-	return dynamicHeaders
 }

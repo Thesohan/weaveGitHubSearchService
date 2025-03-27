@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -14,18 +14,18 @@ import (
 // Mock implementation of HTTPClient for testing.
 type mockHTTPClient struct{}
 
-func (m *mockHTTPClient) DoRequest(ctx context.Context, client *http.Client, url string, headers map[string]string, body interface{}, response interface{}) error {
-	mockData := `{
-		"items": [
-			{
-				"html_url": "https://github.com/test/repo/blob/main/file.go",
-				"repository": {
-					"full_name": "test/repo"
-				}
+const mockData = `{
+	"items": [
+		{
+			"html_url": "https://github.com/test/repo/blob/main/file.go",
+			"repository": {
+				"full_name": "test/repo"
 			}
-		]
-	}`
+		}
+	]
+}`
 
+func (m *mockHTTPClient) DoRequest(ctx context.Context, client *http.Client, url string, headers map[string]string, body interface{}, response interface{}) error {
 	return json.Unmarshal([]byte(mockData), response)
 }
 
@@ -35,32 +35,21 @@ func TestSearchCode(t *testing.T) {
 	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte(`{
-			"items": [
-				{
-					"html_url": "https://github.com/test/repo/blob/main/file.go",
-					"repository": {
-						"full_name": "test/repo"
-					}
-				}
-			]
-		}`))
+		_, _ = w.Write([]byte(mockData))
 	}))
 	defer mockServer.Close()
 
 	// Set up test environment
-	os.Setenv("GITHUB_TOKEN", "test-token")
-	client := NewGitHubClient(mockServer.URL)
-
+	client := NewGitHubClient(WithBaseURL(mockServer.URL), WithToken("github-search-test-token"))
 	// Call the function
 	data, err := client.SearchCode(context.Background(), "test-query")
-
 	// Assertions
 	assert.NoError(t, err)
 	assert.NotNil(t, data)
 	assert.Len(t, data.Items, 1)
-	assert.Equal(t, "https://github.com/test/repo/blob/main/file.go", data.Items[0].HTMLURL)
-	assert.Equal(t, "test/repo", data.Items[0].Repository.FullName)
+	jsonData, err := json.Marshal(data)
+	assert.NoError(t, err)
+	assert.JSONEq(t, mockData, string(jsonData))
 }
 
 // Test SearchCode with API error response
@@ -73,8 +62,8 @@ func TestSearchCodeAPIError(t *testing.T) {
 	defer mockServer.Close()
 
 	// Set up test environment
-	client := NewGitHubClient(mockServer.URL)
-
+	maximumRetryDelay := 1 * time.Second
+	client := NewGitHubClient(WithBaseURL(mockServer.URL), WithToken("github-search-token"), WithMaximumRetryDelay(&maximumRetryDelay))
 	// Call the function
 	data, err := client.SearchCode(context.Background(), "test-query")
 

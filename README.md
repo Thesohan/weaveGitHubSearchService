@@ -30,36 +30,42 @@ Instructions
 2. Create a new branch and do all your work in that branch
 3. Create a PR back into the main branch and send in the URL to the Pull Request
 
-
 ## Prerequisites
+### Mac:
+1. Make and Git: `brew install git make`
+2. Docker: `brew install docker`
+3. Ensure Docker is running:
+   ```sh
+   open -a Docker
+   docker info
+   ```
+   If Docker is not running, start the Docker daemon manually.
 
-1. Ensure you have the following installed on your system:
-Go (1.23.3) - Download & Install (https://go.dev/dl/)
-
-2. Protocol Buffers Compiler (protoc) - `brew install protobuf`
-
-3. Buf (for Protobuf management) - Install using Homebrew: `brew install bufbuild/buf/buf`
-
-4. Git - Install using Homebrew: `brew install git`
-
-5. Make - Install using Homebrew: `brew install make`
+### Linux:
+1. Make and Git: `sudo apt-get install git make`
+2. Docker: `sudo apt-get install docker`
+3. Ensure Docker is running:
+   ```sh
+   sudo systemctl start docker
+   sudo systemctl enable docker  # Optional: Start Docker on boot
+   sudo docker info
 
 ## Setup Instructions:
 1. Clone the repository: `git clone git@github.com:Thesohan/weaveGitHubSearchService.git`
-2. Install Go dependencies: `make deps`
 3. Generate Protobuf code (if modified): `make generate`
-4. Set up environment variables: `export GITHUB_API_TOKEN=<your_github_token>`
+4. Update environement variables file `.env`: `GITHUB_API_TOKEN=<your_github_token>`
 
 ## Running the Service
-1. To start the gRPC server, run: `make server`
-2. Running the Client, run: `make client`
-3. To execute a test request, run: `make test`
+1. To start the gRPC server and client: `make run`
+2. It will ask you to `Enter username`: Enter the username for user level search result (optional)
+3. It will ask you to `Enter search term`: Enter the search term to search in the GitHub repository (required)
+
+## Running the Tests
+1. To execute a test request, run: `make test`
 
 ## Troubleshooting
-1. Missing Dependencies: Run go mod tidy to install missing Go dependencies.
-2. Protobuf Compilation Issues: Ensure protoc and buf are correctly installed.
-3. Authentication Errors: Ensure you have set GITHUB_API_TOKEN with a valid GitHub token in your env variable.
-
+1. Authentication Errors: Ensure you have set `GITHUB_API_TOKEN` with a valid GitHub token in your env variable.
+2. Ensure docker is up and running
 
 ### Future Improvements
 1. Support for configurable logging
