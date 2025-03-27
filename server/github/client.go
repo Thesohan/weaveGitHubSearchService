@@ -20,7 +20,7 @@ const (
 
 var (
 	once      sync.Once
-	singleton IGithubClient
+	singleton CodeSearcher
 )
 
 type searchResponse struct {
@@ -40,7 +40,7 @@ type githubClient struct {
 }
 
 // IGithubClient interface for API requests.
-type IGithubClient interface {
+type CodeSearcher interface {
 	SearchCode(ctx context.Context, query string) (*searchResponse, error)
 }
 
@@ -58,7 +58,7 @@ func WithMaximumRetryDelay(maximumRetryDelay *time.Duration) GitHubClientOption 
 	return func(c *githubClient) { c.maximumRetryDelay = maximumRetryDelay }
 }
 
-func NewGitHubClient(opts ...GitHubClientOption) IGithubClient {
+func NewGitHubClient(opts ...GitHubClientOption) CodeSearcher {
 	client := &githubClient{
 		client:  &http.Client{Timeout: httpClientTimeout},
 		baseURL: defaultGitHubAPIURL,

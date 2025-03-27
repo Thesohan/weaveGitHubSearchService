@@ -25,7 +25,7 @@ const (
 // gitHubSearchService implements the gRPC service.
 type gitHubSearchService struct {
 	pb.UnimplementedGithubSearchServiceServer
-	ghClient github.IGithubClient
+	ghClient github.CodeSearcher
 }
 
 // Search handles search requests.
