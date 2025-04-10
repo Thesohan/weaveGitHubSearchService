@@ -1,0 +1,35 @@
+# Use an official Golang image for building
+FROM golang:1.24 AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy Go modules and dependencies
+COPY go.mod go.sum ./
+RUN go mod download
+
+# Copy the entire source code
+COPY . .
+
+# Build the Go application statically
+RUN go build -o server ./server/server.go
+
+# Use a minimal runtime image
+FROM debian:bookworm-slim
+# Install CA certificates
+RUN apt-get update && apt-get install -y ca-certificates && rm -rf /var/lib/apt/lists/*
+
+# Set working directory
+WORKDIR /app
+
+# Copy the compiled binary from the builder stage
+COPY --from=builder /app/server .
+
+# Ensure binary is executable
+RUN chmod +x ./server
+
+# Expose required ports
+EXPOSE 8080
+
+# Run the server
+CMD ["./server"]
